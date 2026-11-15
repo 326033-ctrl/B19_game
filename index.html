@@ -167,7 +167,7 @@
 
         <!-- ゲームオーバー画面 -->
         <div id="gameover-screen" class="overlay hidden">
-            <h2 class="text-4xl mb-2 storybook-title storybook-text-red text-center">ごっつんこ！</h2>
+            <h2 id="result-title" class="text-4xl mb-2 storybook-title storybook-text-red text-center">ごっつんこ！</h2>
             <p class="text-amber-800 font-bold mb-1 mt-4">あつめた きの实</p>
             <p id="final-score" class="text-5xl font-bold text-orange-500 mb-6 drop-shadow-md">0</p>
             <button id="restart-btn" class="btn">もういっかい</button>
@@ -267,18 +267,19 @@
          * 餌(赤い木の実)の配置
          */
         function placeFood() {
-            let newFoodPosition;
-            while (true) {
-                newFoodPosition = {
-                    x: Math.floor(Math.random() * GRID_SIZE),
-                    y: Math.floor(Math.random() * GRID_SIZE)
-                };
-                const onSnake = snake.some(segment => segment.x === newFoodPosition.x && segment.y === newFoodPosition.y);
-                if (!onSnake) {
-                    break;
+            const occupied = new Set(snake.map(segment => `${segment.x},${segment.y}`));
+            const emptyCells = [];
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    if (!occupied.has(`${x},${y}`)) emptyCells.push({ x, y });
                 }
             }
-            food = newFoodPosition;
+            if (emptyCells.length === 0) {
+                food = null;
+                gameOver(true);
+                return;
+            }
+            food = emptyCells[Math.floor(Math.random() * emptyCells.length)];
         }
 
         /**
@@ -346,8 +347,9 @@
         /**
          * ゲームオーバー
          */
-        function gameOver() {
-            gameState = 'gameover';
+        function gameOver(isClear = false) {
+            gameState = isClear ? 'clear' : 'gameover';
+            document.getElementById('result-title').textContent = isClear ? 'ぜんぶ あつめた！' : 'ごっつんこ！';
             finalScoreDisplay.textContent = score;
             
             if (score > highScore) {
@@ -469,6 +471,7 @@
          * 赤い木の実の描画
          */
         function drawFood() {
+            if (!food) return;
             const cx = food.x * tileSize + tileSize / 2;
             const cy = food.y * tileSize + tileSize / 2;
             const radius = tileSize / 2.5;
